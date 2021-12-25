@@ -1,0 +1,130 @@
+# Elixir Training
+
+## Basics - types
+
+### Strings and Atoms
+
+https://hexdocs.pm/elixir/String.html
+https://hexdocs.pm/elixir/Atom.html
+
+```elixir
+"We like strings"
+'We only use charlists when working with Erlang libraries!'
+name = "Tim"
+"We can do string interpolation #{name}"
+
+# Atoms are like symbols in other languages
+:atoms_are_not_garbage_collected
+# Use atoms for distinct values
+:ok
+:error
+:"stage complete"
+```
+
+Question!
+
+When parsing user input is it better to parse to strings, charlists or atoms? Why?
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Booleans
+
+```elixir
+# and, or --> both require boolean values as inputs
+# --> false
+true and false
+# --> true
+true or false
+# --> error!!
+1 or true
+
+# &&, || --> can handle truthy/falsy values. 
+# nil and false are the only falsy values
+# --> 1
+1 || true
+# --> true
+true || 1
+# --> nil
+1 && nil
+
+# Some of the stranger cases...
+# --> 1
+false or 1
+# --> error!!
+1 or false
+```
+
+### Comparisons
+
+```elixir
+# --> true
+"a" == "a"
+# --> true 
+1 == 1.0
+# --> false 
+1 === 1.0
+# --> true 
+5.0 <= 10
+# --> true. All types can be compared. There is an overall ordering of types:
+1 < :atom
+# number < atom < reference < function < port < pid < tuple < map < list < bitstring
+```
+
+### Lists and Tuples
+
+<!-- livebook:{"break_markdown":true} -->
+
+* Lists are linked lists (each element has a pointer to the next)
+  * Prepending elements is fast
+  * Looking up an element or getting the length of a list takes time proportional to the list length
+  * The built-in List module has some helpful util methods - https://hexdocs.pm/elixir/List.html
+* Tuples are stored contiguously in memory
+  * Prepending elements or editing is slow
+  * Looking up an element or getting the length is constant in time (fast!)
+  * The built-in Tuple module has some helpful util methods - https://hexdocs.pm/elixir/Tuple.html
+
+```elixir
+# A list
+[1, 2, 3]
+# --> [1, 2, 3] - Syntax for prepending to list
+[1 | [2, 3]]
+# --> [1, 2, 3, 4]
+[1, 2] ++ [3, 4]
+```
+
+```elixir
+# A tuple
+tuple = {:ok, 15, "humans"}
+```
+
+### Maps and Structs
+
+```elixir
+map = %{
+  "my_key" => "my_value",
+  57 => %{"nested_map_key" => "nested_value"},
+  :atoms_make_good_keys => "yay!",
+  :tricky_case => nil
+}
+
+IO.inspect(Map.get(map, "my_key"), label: "my_key")
+IO.inspect(Map.get(map, "non-existent"), label: "non-existent")
+IO.inspect(Map.get(map, "non-existent-defaulted", :my_default), label: "non-existent-defaulted")
+IO.inspect(Map.get(map, ":tricky_case"), label: "tricky_case")
+IO.inspect(map.tricky_case, label: "tricky_case with dot syntax")
+# IO.inspect(map.non_existent, label: "non_existent with dot syntax")
+IO.inspect(Map.has_key?(map, "non-existent"), label: "has non-existent-key")
+```
+
+```elixir
+defmodule StructExample do
+  @enforce_keys [:name]
+  defstruct name: "", age: 0, height: 0
+end
+
+%StructExample{name: "Tim"}
+```
+
+### Keyword Lists
+
+## Section
