@@ -785,8 +785,6 @@ end
 UsingMac.my_method()
 ```
 
-## Protocols
-
 ## Things to read up on outside of this training
 
 * Protocols
