@@ -119,9 +119,44 @@ tuple = {:ok, 15, "humans"}
 
 <!-- livebook:{"break_markdown":true} -->
 
+### Interlude - the pipe operator!!
+
+The pipe operator is a handy way to pipe the output of a function into another function.
+This helps avoid lots of nested functions.
+
+```elixir
+defmodule Pipe do
+  def add_1(x), do: x + 1
+  def times_3(x), do: x * 3
+  def minus_n(x, n), do: x - n
+end
+
+x = 5
+
+# If I want to add 1, then times 3 without a pipe I need to do something like this:
+Pipe.times_3(Pipe.add_1(x))
+# Not too bad, but if you have a lot of chained function calls it can get quite cumbersome
+
+# Instead we can use the pipe operator
+x |> Pipe.add_1() |> Pipe.times_3()
+
+# If we pipe to a function which takes multiple arguments the piped value is used at the first 
+#  argument
+x |> Pipe.minus_n(4)
+# Is the same as...
+Pipe.minus_n(x, 4)
+```
+
 #### Some examples with the Enum and Stream module
 
 * Both modules provide similar methods, but the Stream module has operations which are lazy
+
+```elixir
+# This code doesn't output a list! Just a description of transformations we want to do
+[1, 2, 3]
+|> Stream.map(fn x -> x + 1 end)
+|> Stream.map(fn x -> x + 3 end)
+```
 
 | QUESTION!                                                     |
 | ------------------------------------------------------------- |
@@ -723,10 +758,6 @@ my_unless 1 == 2 do
   IO.puts("Woohoo!!")
 end
 ```
-
-
-
-<!-- livebook:{"break_markdown":true} -->
 
 ### Use
 
