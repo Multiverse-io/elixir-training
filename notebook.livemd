@@ -540,6 +540,183 @@ def PatternMatching do
 end
 ```
 
+## Mix - the Elixir build tool
+
+* [Mix](https://elixir-lang.org/getting-started/mix-otp/introduction-to-mix.html#our-first-project) is the build tool for Elixir, similar to npm, yarn, maven, sbt, pip, 
+  or whatever else you are used to!
+* It can...
+  * Compile and run your project
+  * Create new projects
+  * Run your tests
+  * Download your dependencies
+  * Lots of other useful stuff...
+* Mix is great! But not very interesting, we'll just cover a few useful commands here
+
+<!-- livebook:{"break_markdown":true} -->
+
+```bash
+mix new my_new_project # Create a new project with the main module being MyNewProject. 
+# Check the example folder for an example!
+```
+
+```bash
+mix compile
+```
+
+```bash
+MIX_ENV=test mix compile
+```
+
+```bash
+iex -S mix # Start an iex session with all of your project code included!
+```
+
+```bash
+mix deps.get
+```
+
+```bash
+mix test
+```
+
+```bash
+mix deps.get
+```
+
+```bash
+mix format
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Some useful Phoenix and Ecto mix commands
+
+Note for some of these to work you'll need to be in a Phoenix project or have the 
+[Phoenix pre-requisites](https://hexdocs.pm/phoenix/installation.html#content) installed
+
+```bash
+mix phx.server # Start the Phoenix server
+```
+
+```bash
+mix phx.routes # Show the routes available in the application and their controllers
+```
+
+```bash
+mix phx.new hello_world # Create a new Phoenix project
+```
+
+```bash
+mix ecto.migrate # Run outstanding DB migrations
+```
+
+```bash
+mix ecto.reset # Clears DB, re-runs migrations, and puts in some seed data
+```
+
+## ExUnit - the Elixir testing library
+
+You can find and run all of these examples in example/test/example_test.exs
+
+Unfortunately they aren't setup to run in this Livebook.
+
+<!-- livebook:{"break_markdown":true} -->
+
+### A simple test case
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+defmodule ExampleTest do
+  use ExUnit.Case # <--- Lets ExUnit setup the module for testing
+  doctest Example # <--- says to run the doctests from the example module
+
+  describe "hello" do # <---- describe can be used to group similar tests
+    test "greets the world" do # <---- the actual test case 
+      assert Example.hello() == :world
+    end
+  end
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Using refute
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+test "doesn't sound like a police officer" do
+  refute Example.hello() == :ello
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Other useful and helpers
+
+* assert_raise
+* capture_io and capture_log
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Doctests
+
+Examples from docstrings on methods can be automatically tested!
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+@doc """
+Hello world.
+
+## Examples
+
+    iex> Example.hello()
+    :world
+
+"""
+def hello do
+  :world
+end
+```
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Test setup
+
+* setup_all runs once for the module
+* setup runs once before each test
+* Both can add to a state/context map, which is then available to each test
+* You can have multiple setup clauses
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+setup_all do
+  IO.puts("Running setup_all step")
+  [recipient: :world]
+end
+
+setup do
+  IO.puts("Running setup step")
+
+  on_exit(fn ->
+    IO.puts("This is invoked once the test is done. Process: #{inspect(self())}")
+  end)
+
+  # Returns extra metadata to be merged into context.
+  # Any of the following would also work:
+  #
+  #     {:ok, %{hello: "world"}}
+  #     {:ok, [hello: "world"]}
+  #     %{hello: "world"}
+  #
+  [hello: "world"]
+end
+
+```
+
 ## Modules and docs
 
 ```elixir
@@ -790,3 +967,7 @@ UsingMac.my_method()
 * Protocols
 * Macros
 * Elixir Processes and OTP
+
+<!-- livebook:{"break_markdown":true} -->
+
+
