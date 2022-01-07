@@ -19,8 +19,8 @@ https://hexdocs.pm/elixir/String.html
 https://hexdocs.pm/elixir/Atom.html
 
 ```elixir
-"We like strings"
-'We only use charlists when working with Erlang libraries!'
+"We like strings! They are utf-8 encoded!"
+'We only use charlists when working with Erlang libraries! They are just lists of integers!'
 name = "Tim"
 "We can do string interpolation #{name}"
 
@@ -30,6 +30,16 @@ name = "Tim"
 :ok
 :error
 :"stage complete"
+```
+
+```elixir
+# Some examples to understand why we might prefer strings to charlists
+
+# --> 5 (counts graphmemes)
+String.length("héllo")
+
+# --> 6 (counts code points - é is represented by 2 code points)
+length('héllo')
 ```
 
 | QUESTION!                                                                           |
@@ -91,7 +101,7 @@ false or 1
   * Looking up an element or getting the length of a list takes time proportional to the list length
   * The [Enum module](https://hexdocs.pm/elixir/1.12/Enum.html) contains useful methods for lists, maps, and ranges
   * The [Stream module](https://hexdocs.pm/elixir/1.12/Stream.html) contains similar methods, but the lazy equivalents
-  * The built-in List module has some helpful util methods - https://hexdocs.pm/elixir/List.html
+  * The built-in [List module](https://hexdocs.pm/elixir/List.html) has some helpful util methods
 * [Streams](https://hexdocs.pm/elixir/1.12/Stream.html) are lazy lists, and can be infinite
 * Tuples are stored contiguously in memory
   * Prepending elements or editing is slow (requires the whole tuple to be copied)
@@ -138,7 +148,9 @@ Pipe.times_3(Pipe.add_1(x))
 # Not too bad, but if you have a lot of chained function calls it can get quite cumbersome
 
 # Instead we can use the pipe operator
-x |> Pipe.add_1() |> Pipe.times_3()
+x
+|> Pipe.add_1()
+|> Pipe.times_3()
 
 # If we pipe to a function which takes multiple arguments the piped value is used at the first 
 #  argument
@@ -170,30 +182,34 @@ defmodule Add do
     IO.puts(x)
     x + 1
   end
-end
 
-enum_fn = fn nums ->
-  nums
-  |> Enum.map(&Add.add_one/1)
-  |> Enum.map(&Add.add_one/1)
-  |> Enum.map(&Add.add_one/1)
-end
+  def enum_fn(nums) do
+    nums
+    |> Enum.map(&Add.add_one/1)
+    |> Enum.map(&Add.add_one/1)
+    |> Enum.map(&Add.add_one/1)
+  end
 
-stream_fn = fn nums ->
-  nums
-  |> Stream.map(&Add.add_one/1)
-  |> Stream.map(&Add.add_one/1)
-  |> Stream.map(&Add.add_one/1)
-  |> Enum.to_list()
+  def stream_fn(nums) do
+    nums
+    |> Stream.map(&Add.add_one/1)
+    |> Stream.map(&Add.add_one/1)
+    |> Stream.map(&Add.add_one/1)
+    |> Enum.to_list()
+  end
 end
 
 IO.puts("Running Enum version")
-enum_fn.(nums)
+Add.enum_fn(nums)
 IO.puts("Running Stream version")
-stream_fn.(nums)
+Add.stream_fn(nums)
 ```
 
 ### Maps and Structs
+
+<!-- livebook:{"break_markdown":true} -->
+
+#### Maps Intro
 
 ```elixir
 map = %{
@@ -214,6 +230,23 @@ Map.has_key?(map, "non-existent") |> IO.inspect(label: "has non-existent-key")
 ```
 
 ```elixir
+# Where all the keys of a map are atoms you can use this abbreviated syntax:
+abbre_syntax = %{
+  key_1: "value 1",
+  key_2: "value 2"
+}
+
+normal_syntax = %{
+  :key_1 => "value 1",
+  :key_2 => "value 2"
+}
+
+abbre_syntax == normal_syntax
+```
+
+#### Structs Intro
+
+```elixir
 defmodule Human do
   @enforce_keys [:name]
   defstruct name: "", age: 0, height: 0
@@ -225,7 +258,10 @@ end
 %Human{name: "Tim"}
 %Human{name: "Tim", age: 20, height: 150}
 %Human{age: 20, height: 150}
+%Human{name: "Tim", species: "Human"}
 ```
+
+#### Comparing structs to maps
 
 Let's add some functionality to our Human module and contrast how this might look when 
 using a struct vs a map...
@@ -410,10 +446,9 @@ x = 5
 
 * [x] Named functions
 * [x]  Anonymous functions, when to use, and how to pass named functions
-  * [ ]  The pipe operator (if I can bodge it into the exercise)
 * [x]  Default args
-* [ ]  'when' qualifier
-* [ ]  pattern matching with multiple function headers
+* [x]  'when' qualifier
+* [x]  pattern matching with multiple function headers
 
 ```elixir
 # Named functions
@@ -441,10 +476,10 @@ add.(1, 5)
 
 # You can pass anonymous functions as arguments to other functions
 # e.g.1
-IO.inspect(Enum.map([1, 2, 3], fn x -> x * 2 end), label: "Doubled")
+Enum.map([1, 2, 3], fn x -> x * 2 end) |> IO.inspect(label: "Doubled")
 # e.g.2
 triple = fn x -> x * 3 end
-IO.inspect(Enum.map([1, 2, 3], triple), label: "Tripled")
+Enum.map([1, 2, 3], triple) |> IO.inspect(label: "Tripled")
 ```
 
 ```elixir
@@ -476,6 +511,15 @@ Example usage:
 ```elixir
 combined_fn = Fn.and_then(fn a -> a + 5 end, fn a -> a * 3 end)
 combined_fn.(7) # --> (7 + 5) * 3 --> 36
+```
+
+```elixir
+defmodule Fn do
+  # ....
+end
+
+combined_fn = Fn.and_then(fn a -> a + 5 end, fn a -> a * 3 end)
+combined_fn.(7)
 ```
 
 | BONUS 1!                                                                                                            |
@@ -516,7 +560,7 @@ defmodule Guards do
   end
 
   def double(a) when is_function(a) do
-    fn x -> a.(x) |> a.() end
+    fn x -> x |> a.() |> a.() end
   end
 end
 
@@ -527,14 +571,14 @@ IO.inspect(doubled_fn.(2), label: "function")
 ```
 
 ```elixir
-def PatternMatching do
+defmodule PatternMatching do
   def get_favourite_pet(person, pets)
 
-  def get_favourite_pet(_, [_ | _]]) do
+  def get_favourite_pet(_, [_ | _]) do
     "No pets :("
   end
 
-  def get_favourite_pet(%{name: name} = _person, [%{name: pet_name}} | _]]) do
+  def get_favourite_pet(%{name: name} = _person, [%{name: pet_name} | _]) do
     "#{pet_name} is #{name}'s favourite pet!"
   end
 end
@@ -577,10 +621,6 @@ mix deps.get
 
 ```bash
 mix test
-```
-
-```bash
-mix deps.get
 ```
 
 ```bash
@@ -717,6 +757,12 @@ end
 
 ```
 
+<!-- livebook:{"break_markdown":true} -->
+
+### Project-wide test setup
+
+`test/test_helper.exs` allows you to do some setup for all tests in your project.
+
 ## Modules and docs
 
 ```elixir
@@ -783,7 +829,7 @@ end
 
 #### Comprehensions
 
-Comprehensions are useful as they allow you to do functions like Enum.map, Enum.filter in a
+Comprehensions are useful as they allow you to do functions like `Enum.map`, `Enum.filter` in a
 neater, more concise syntax
 
 ```elixir
@@ -815,15 +861,39 @@ for({animal, num} <- %{:monkeys => 10, :lions => 26}, do: {animal, num - 2})
 for {key, val} <- [a: 1, b: 2, c: 3], into: %{}, do: {key, val * 2}
 ```
 
+| EXERCISE!                                                                                                                                           |
+| --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Use a comprehension to find the product (mutiplication) of all even numbers from the first list, and all numbers less than 100 from the second list |
+
+```elixir
+# We'll just want to keep the even numbers
+list_1 = [1, 2, 3, 4, 5]
+# We'll just want to keep the numbers less than 100
+list_2 = [27, 105, 109, 32, 2, 999]
+
+# Final output should be a list containing: 
+#  --> [2 * 27, 4 * 27, 2 * 32, 4 * 32, 2 * 2, 4 * 2]
+#  --> [54, 108, 64, 128, 4, 8]
+```
+
 #### The With statement
+
+Enables you to succintly execute a sequence of commands, and return immediately if any of the 
+commands don't meet the given pattern match.
 
 <!-- livebook:{"force_markdown":true} -->
 
 ```elixir
-with 
-  {:ok, db_results} <- get_db_data()
-  
+result = with 
+  {:ok, db_results} <- get_db_data(),
+  {:ok, parsed_results} <- parse_db_results(db_results) do
+    IO.inspect(parsed_results)
+  end
 ```
+
+<!-- livebook:{"break_markdown":true} -->
+
+##### Motivation...
 
 ```elixir
 defmodule MaybeFailFns do
@@ -896,7 +966,9 @@ import MaybeFailFns
 defmodule Some.Long.Nested.Module do
   def do_stuff(), do: "Stuff!"
 end
+```
 
+```elixir
 Some.Long.Nested.Module.do_stuff()
 # Or...
 alias Some.Long.Nested.Module
@@ -917,7 +989,7 @@ do_stuff()
 
 ### Require
 
-If you want to use macros from a module then you must require that module.
+If you want to use macros from a module then you must `require` that module.
 
 ```elixir
 defmodule Mac do
@@ -927,11 +999,12 @@ defmodule Mac do
     end
   end
 end
+```
 
+```elixir
 require Mac
-import Mac
 
-my_unless 1 == 2 do
+Mac.my_unless 1 == 2 do
   IO.puts("Woohoo!!")
 end
 ```
