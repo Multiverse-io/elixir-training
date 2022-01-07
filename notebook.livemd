@@ -96,6 +96,7 @@ false or 1
 <!-- livebook:{"break_markdown":true} -->
 
 * Lists are linked lists (each element has a pointer to the next)
+  * they can contain any, mixed values, atoms, strings, maps or even other lists.
   * ![](images/linked-list.jpeg)
   * Prepending elements is fast
   * Looking up an element or getting the length of a list takes time proportional to the list length
@@ -224,9 +225,11 @@ Map.get(map, "my_key") |> IO.inspect(label: "my_key")
 Map.get(map, "non-existent") |> IO.inspect(label: "non-existent")
 Map.get(map, "non-existent-defaulted", :my_default) |> IO.inspect(label: "non-existent-defaulted")
 Map.get(map, ":tricky_case") |> IO.inspect(label: "tricky_case")
-map.tricky_case |> IO.inspect(label: "tricky_case with dot syntax")
-map.non_existent |> IO.inspect(label: "non_existent with dot syntax")
 Map.has_key?(map, "non-existent") |> IO.inspect(label: "has non-existent-key")
+map[:tricky_case] |> IO.inspect(label: "tricky_case with access syntax")
+map.tricky_case |> IO.inspect(label: "tricky_case with dot syntax")
+map[:non_existent] |> IO.inspect(label: "non_existent with access syntax")
+map.non_existent |> IO.inspect(label: "non_existent with dot syntax")
 ```
 
 ```elixir
@@ -293,12 +296,22 @@ end
 
 ```elixir
 mike = %HumanStruct{name: "Mike", age: 25, height: 180}
-mike_2 = mike |> HumanStruct.grow_older() |> HumanStruct.grow_taller()
-IO.inspect(mike_2, label: "Mike")
+
+mike
+|> HumanStruct.grow_older()
+|> HumanStruct.grow_taller()
+|> IO.inspect(label: "Mike")
 
 rachel = %{name: "Rachel", age: 48, height: 190}
-rachel_2 = rachel |> HumanMap.grow_older() |> HumanMap.grow_taller()
-IO.inspect(rachel_2, label: "Rachel")
+
+rachel
+|> HumanMap.grow_older()
+|> HumanMap.grow_taller()
+|> IO.inspect(label: "Rachel")
+
+# note that we can also use our Map in the HumanStruct methods,
+# because we're only matching on a struct that has an `age` or `height`
+rachel |> HumanStruct.grow_older()
 ```
 
 | DISCUSSION!                                                            |
@@ -313,6 +326,7 @@ IO.inspect(rachel_2, label: "Rachel")
 * They are often used to pass function options in order to give a neat syntax for passing them
 * Keyword lists benefit from some syntactic sugar to make using them easier
 * The [Keyword module](https://hexdocs.pm/elixir/Keyword.html) has some helpful utils for working with Keyword lists
+* Possibly somewhat unobviously, they may contain elements with the same key more than once!
 
 ```elixir
 # A keyword list
@@ -402,6 +416,10 @@ IO.inspect(z, label: "z")
 ```elixir
 # When things don't match...
 [a, b] = [1, 2, 3]
+
+# You can use an underscore `_` or prefix a variable with an underscore e.g. `_tail` to help
+# in situations where you only want to match parts
+[a, b, _] = [1, 2, 3]
 ```
 
 ```elixir
@@ -906,14 +924,14 @@ defmodule MaybeFailFns do
     end
   end
 
-  def parse_file(file_contents) do
+  def parse_file(_file_contents) do
     case random_fail() do
       true -> {:err, "cannot parse file"}
       false -> {:ok, "parsed file contents"}
     end
   end
 
-  def write_parsed_output(parsed_file) do
+  def write_parsed_output(_parsed_file) do
     case random_fail() do
       true -> {:err, "cannot write file"}
       false -> {:ok, "File written successfully!"}
@@ -981,9 +999,9 @@ import Some.Long.Nested.Module
 do_stuff()
 ```
 
-| DISCUSSION                                                |
-| --------------------------------------------------------- |
-| When should we use import and when should we use require? |
+| DISCUSSION                                              |
+| ------------------------------------------------------- |
+| When should we use import and when should we use alias? |
 
 <!-- livebook:{"break_markdown":true} -->
 
