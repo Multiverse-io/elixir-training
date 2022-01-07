@@ -166,7 +166,7 @@ map = %{
   "my_key" => "my_value",
   57 => %{"nested_map_key" => "nested_value"},
   :atoms_make_good_keys => "yay!",
-  :tricky_case => {:error, "tricky"}
+  :tricky_case => nil
 }
 
 # What are the outputs from each of the following?
@@ -177,9 +177,7 @@ Map.get(map, ":tricky_case") |> IO.inspect(label: "tricky_case")
 Map.has_key?(map, "non-existent") |> IO.inspect(label: "has non-existent-key")
 map[:tricky_case] |> IO.inspect(label: "tricky_case with access syntax")
 map.tricky_case |> IO.inspect(label: "tricky_case with dot syntax")
-# Note how using access syntax will return nil for missing keys, whereas...
 map[:non_existent] |> IO.inspect(label: "non_existent with access syntax")
-# ...the dot syntax will raise a KeyError!
 map.non_existent |> IO.inspect(label: "non_existent with dot syntax")
 ```
 
