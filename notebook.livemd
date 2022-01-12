@@ -30,6 +30,9 @@ name = "Tim"
 :ok
 :error
 :"stage complete"
+
+"we love " <> "concatenating things"
+'we love ' ++ 'concatenating things'
 ```
 
 ```elixir
