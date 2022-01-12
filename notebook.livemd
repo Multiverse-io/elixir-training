@@ -595,7 +595,7 @@ IO.inspect(doubled_fn.(2), label: "function")
 defmodule PatternMatching do
   def get_favourite_pet(person, pets)
 
-  def get_favourite_pet(_, [_ | _]) do
+  def get_favourite_pet(_, []) do
     "No pets :("
   end
 
@@ -603,6 +603,12 @@ defmodule PatternMatching do
     "#{pet_name} is #{name}'s favourite pet!"
   end
 end
+
+PatternMatching.get_favourite_pet(%{name: "Tim"}, [])
+|> IO.inspect(label: "No pets")
+
+PatternMatching.get_favourite_pet(%{name: "Joanna"}, [%{name: "Fluffy"}, %{name: "Cuddles"}])
+|> IO.inspect(label: "Fluffy and Cuddles:")
 ```
 
 ## Mix - the Elixir build tool
