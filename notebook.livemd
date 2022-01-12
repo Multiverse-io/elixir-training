@@ -274,11 +274,11 @@ defmodule HumanStruct do
   @enforce_keys [:name]
   defstruct name: "", age: 0, height: 0
 
-  def grow_older(%{age: age} = human) do
+  def grow_older(%HumanStruct{age: age} = human) do
     %{human | age: age + 1}
   end
 
-  def grow_taller(%{height: height} = human) do
+  def grow_taller(%HumanStruct{height: height} = human) do
     %{human | height: height + 10}
   end
 end
@@ -309,9 +309,9 @@ rachel
 |> HumanMap.grow_taller()
 |> IO.inspect(label: "Rachel")
 
-# note that we can also use our Map in the HumanStruct methods,
-# because we're only matching on a struct that has an `age` or `height`
-rachel |> HumanStruct.grow_older()
+# note that we can't use our Map in the HumanStruct methods,
+# because we're matching on it being a struct
+# rachel |> HumanStruct.grow_older()
 ```
 
 | DISCUSSION!                                                            |
