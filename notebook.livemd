@@ -892,8 +892,8 @@ for({animal, num} <- %{:monkeys => 10, :lions => 26}, do: {animal, num - 2})
 for {key, val} <- [a: 1, b: 2, c: 3], into: %{}, do: {key, val * 2}
 ```
 
-| EXERCISE!                                                                                                                                           |
-| --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| EXERCISE!                                                                                                                                            |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Use a comprehension to find the product (multiplication) of all even numbers from the first list, and all numbers less than 100 from the second list |
 
 ```elixir
@@ -985,6 +985,29 @@ end
 # Approach 2 - use the with to neaten things up!:
 import MaybeFailFns
 ```
+
+#### With statements also allow you to handle errors neatly rather than just returning them
+
+We can use the else block of a with statement to pattern match on errors (in the case that not 
+all the pattern matches in the with were successful)
+
+<!-- livebook:{"force_markdown":true} -->
+
+```elixir
+result = with 
+  {:ok, db_results} <- get_db_data(),
+  {:ok, parsed_results} <- parse_db_results(db_results) do
+    IO.inspect(parsed_results)
+  else
+    {:err, :db_connection_err} -> IO.puts("Couldn't connect to the DB, please try again!")
+    {:err, :parse_error} -> IO.puts("We couldn't parse the results from the DB - please contact support!")
+    _ -> IO.puts("We've encountered an unexpected error - please contact support")
+  end
+```
+
+| EXERCISE!                                                                              |
+| -------------------------------------------------------------------------------------- |
+| Can you add an else clause to the previous exercise to give more user friendly errors? |
 
 ## Alias, require, import, and use
 
