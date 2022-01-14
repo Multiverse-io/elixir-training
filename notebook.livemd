@@ -158,7 +158,11 @@ x
 
 # If we pipe to a function which takes multiple arguments the piped value is used at the first 
 #  argument
-x |> Pipe.minus_n(4)
+x
+|> Pipe.add_1()
+|> Pipe.times_3()
+|> Pipe.minus_n(4)
+
 # Is the same as...
 Pipe.minus_n(x, 4)
 ```
@@ -278,11 +282,11 @@ defmodule HumanStruct do
   defstruct name: "", age: 0, height: 0
 
   def grow_older(%HumanStruct{age: age} = human) do
-    %{human | age: age + 1}
+    %HumanStruct{human | age: age + 1}
   end
 
   def grow_taller(%HumanStruct{height: height} = human) do
-    %{human | height: height + 10}
+    %HumanStruct{human | height: height + 10}
   end
 end
 
@@ -312,9 +316,9 @@ rachel
 |> HumanMap.grow_taller()
 |> IO.inspect(label: "Rachel")
 
-# note that we can't use our Map in the HumanStruct methods,
-# because we're matching on it being a struct
-# rachel |> HumanStruct.grow_older()
+# What happens if we try and use a struct with a method expecting a map or vice versa?
+mike |> HumanMap.grow_older()
+rachel |> HumanStruct.grow_older()
 ```
 
 | DISCUSSION!                                                            |
@@ -450,6 +454,7 @@ x = 5
 
 ```elixir
 [a | x] = [1, 2, 3]
+x
 ```
 
 ```elixir
@@ -517,7 +522,7 @@ Enum.map([1, 2, 3], &Fn.square/1)
 ```
 
 ```elixir
-# Function capture syntax can also be used as a shorthand for definining anonymous functions
+# Function capture syntax can also be used as a shorthand for defining anonymous functions
 Enum.map([1, 2, 3], &(&1 * &1 * &1))
 ```
 
@@ -874,8 +879,7 @@ for(n <- [1, 2, 3, 4, 5], n <= 3, do: n * 2)
 
 # Example with multiple lists
 for a <- [1, 2, 3],
-    b <- [1, 2, 3],
-    rem(a, 2) != 0 do
+    b <- [1, 2, 3] do
   a * b
 end
 |> IO.inspect(label: "Example with multiple lists")
@@ -890,7 +894,7 @@ for {key, val} <- [a: 1, b: 2, c: 3], into: %{}, do: {key, val * 2}
 
 | EXERCISE!                                                                                                                                           |
 | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Use a comprehension to find the product (mutiplication) of all even numbers from the first list, and all numbers less than 100 from the second list |
+| Use a comprehension to find the product (multiplication) of all even numbers from the first list, and all numbers less than 100 from the second list |
 
 ```elixir
 # We'll just want to keep the even numbers
