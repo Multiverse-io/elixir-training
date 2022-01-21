@@ -1,0 +1,418 @@
+# Macros
+
+## If macros were strings...
+
+```elixir
+# NOT REAL ELIXIR CODE
+defmacro unless(condition, body) do
+  "if not #{condition} do #{body} end"
+end
+
+unless result == :ok do
+  raise error
+end
+```
+
+It is possible to implement a string based macro system.
+For example the C preprocessor works a bit like this.
+
+However, string-based macros suck:
+
+* Code has structure; strings do not. Manipulating code strings is clumsy and error prone.
+* There is no way to make string-based macros **hygenic**.
+
+## Influences
+
+José was smoking a combination of the following drugs when he created the Elixir macro system:
+
+* **Common Lisp** (procedural macros that manipulate ASTs, quasiquoting)
+* **Scheme** (hygiene)
+* Various [**obscure languages**](http://boo-language.github.io/) that have layered a more friendly syntax on top of Lisp-style macros.
+
+<!-- livebook:{"break_markdown":true} -->
+
+In Lisp, all code is represented using lists. For example, here is the syntax for the list of numbers from 1 to 3, and the syntax for a function definition:
+
+```CommonLisp
+(1 2 3)    ; Equivalent to [1, 2, 3] in Elixir
+
+;
+; a function that adds one to its argument
+;
+(defun increment (x)
+  (+ 1 x))
+```
+
+If we wrote the function definition in Elixir syntax, it would look like this:
+
+```Elixir
+[:defun, :increment, [:x], [:+, 1, :x]]
+```
+
+**This is actually very similar to the internal representation of your code that the compiler is using.**
+
+**This representation is the Abstract Syntax Tree (AST)**.
+
+**Macros in Elixir return an AST (and can take ASTs as arguments).**
+
+## Quasiquoting
+
+This is an idea that Elixir takes from Lisp. The `quote do ... end` form allows you to obtain an AST from normally-written Elixir code:
+
+```elixir
+quote do
+  my_variable = "foo" <> "bar"
+  my_function(my_variable, 18)
+end
+```
+
+The Elixir AST isn't too scary. Each node is either a constant value (e.g. a string like `"foo"`) or a 3-tuple:
+
+```
+{node_kind, metadata, [first_arg|other_args]}
+```
+
+You can typically ignore the metadata. Each element of `[first_arg|other_args]` is itself an AST node.
+
+<!-- livebook:{"break_markdown":true} -->
+
+Quoting becomes more useful in combination with the `unquote` form. This allows you to splice in an expression that evaluates to an AST node:
+
+```elixir
+quote do
+  1 + unquote(:math.cos(0.5))
+end
+```
+
+There is also `unquote_splicing`, which removes a level of nesting:
+
+```elixir
+quote do
+  [1, 2, 3, unquote_splicing([4, 5]), 6, 7]
+end
+```
+
+## A simple example - a logging macro
+
+```elixir
+defmodule MyLogger do
+  defmacro log(msg) do
+    if true or Application.get_env(:logger, :enabled) do
+      quote do
+        IO.puts("Logged message: #{unquote(msg)}")
+      end
+    end
+  end
+end
+
+defmodule Example do
+  require MyLogger
+
+  def test do
+    # Using Macro.expand to debug the macro
+    IO.inspect(
+      Macro.expand_once(
+        quote do
+          MyLogger.log("This is a log message")
+        end,
+        __ENV__
+      )
+    )
+
+    # Using Macro.expand(...) |> Macro.to_string to debug the macro
+    IO.inspect(
+      Macro.expand_once(
+        quote do
+          MyLogger.log("This is a log message")
+        end,
+        __ENV__
+      )
+      |> Macro.to_string()
+    )
+
+    MyLogger.log("This is a log message")
+  end
+end
+
+Example.test()
+```
+
+## A more complex example macro - deep matching on a map
+
+```elixir
+defmodule Mod do
+  # Not a proper implementation of deep matching because it doesn't
+  # handle overlapping keys.
+  defmacro deep_match({:=, _, [{:%{}, metadata, entries}, expr]}) do
+    quote do
+      unquote({:%{}, metadata, Enum.map(entries, &entry/1)}) =
+        unquote(expr)
+    end
+  end
+
+  defp flatten("" <> str) do
+    [str]
+  end
+
+  defp flatten({:>, _, ["" <> k1, "" <> k2]}) do
+    [k1, k2]
+  end
+
+  defp flatten({:>, _, [expr, k]}) do
+    flatten(expr) ++ [k]
+  end
+
+  defp entry({keys, val}) do
+    keys
+    |> flatten
+    |> Enum.reverse()
+    |> Enum.reduce(val, fn k, expr ->
+      quote do
+        %{unquote(k) => unquote(expr)}
+      end
+    end)
+    |> elem(2)
+    |> List.first()
+  end
+
+  def run() do
+    deep_match(%{("foo" > "bar" > "amp") => amp} = %{"foo" => %{"bar" => %{"amp" => "goo"}}})
+    IO.inspect(amp, label: "AMP")
+
+    quote do
+      deep_match(%{("foo" > "bar" > "amp") => amp} = %{"foo" => %{"bar" => %{"amp" => "goo"}}})
+    end
+    |> Macro.expand(__ENV__)
+    |> Macro.to_string()
+    |> IO.puts()
+  end
+end
+
+Mod.run()
+```
+
+## A more complex macro - Tim's example
+
+```elixir
+defmodule Mod do
+  defmacro get_expected_status_fields_for(status, map_to_merge \\ {:%{}, [], []}) do
+    status_map = %{
+      simplified_status_text: Status.human_status(status),
+      simplified_status_atom: status
+    }
+
+    {map_to_merge_raw, _} = Code.eval_quoted(map_to_merge)
+    merged_map = Map.merge(status_map, map_to_merge_raw)
+    Macro.escape(merged_map)
+  end
+
+  def run() do
+    quote do
+      get_expected_status_fields_for(:hired, %{foo: 1, bar: 2})
+    end
+    |> Macro.expand(__ENV__)
+    |> Macro.to_string()
+    |> IO.puts()
+
+    case %{} do
+      get_expected_status_fields_for(:role_closed, %{foo: 1, bar: 2}) ->
+        IO.puts("OPT 1")
+
+      _ ->
+        IO.puts("OPT 2")
+    end
+  end
+end
+
+defmodule Status do
+  def human_status(status) do
+    case status do
+      :hired -> "Hired"
+      :role_closed -> "Role closed"
+      :not_moving_forward -> "Not moving forward"
+      :withdrawn -> "Application withdrawn"
+      :sent -> "Application sent"
+      :progressing -> "Progressing"
+      :in_review -> "Application in review"
+    end
+  end
+end
+
+Mod.run()
+```
+
+## Macro hygeine
+
+What happens here?
+
+```elixir
+defmodule Mod do
+  defmacro bork_x() do
+    quote do
+      x = 77
+    end
+  end
+
+  def run() do
+    x = 19
+    bork_x()
+    IO.inspect(x, label: "X")
+  end
+end
+
+Mod.run()
+```
+
+Elixir keeps track of the syntactic location of a variable definition/assignment, so it doesn't confuse the `x` introduced inside the macro with the `x` in the `run` function.
+
+Similarly, a macro can't just assume that some variable is defined in the syntactic context where it's called. The following code won't compile:
+
+```elixir
+defmodule Mod do
+  defmacro print_x() do
+    quote do
+      IO.inspect(x, label: "X")
+    end
+  end
+
+  def run() do
+    x = 19
+    print_x()
+  end
+end
+
+Mod.run()
+```
+
+<!-- livebook:{"branch_parent_index":6} -->
+
+## ???
+
+
+
+<!-- livebook:{"break_markdown":true} -->
+
+Elixir's macro hygiene appears not to be perfect when it comes to function calls. For example, the following doesn't do what you'd hope it would!
+
+```elixir
+defmodule MyMacro do
+  def fst({a, _}), do: a
+
+  defmacro get_first(tup) do
+    quote do
+      fst(unquote(tup))
+    end
+  end
+end
+
+defmodule MyMod do
+  require MyMacro
+
+  def fst({_, b}) do
+    b
+  end
+
+  def run() do
+    MyMacro.get_first({"first element", "second element"}) |> IO.inspect()
+    fst({"first element", "second element"}) |> IO.inspect()
+  end
+end
+
+MyMod.run()
+```
+
+## Deliberately breaking hygiene
+
+Elixir makes it easy to break hygiene if you really want to. (Hint: you don't).
+
+```elixir
+defmodule Mod do
+  defmacro print_x() do
+    quote do
+      IO.inspect(var!(x), label: "X")
+    end
+  end
+
+  def run() do
+    x = 19
+    print_x()
+  end
+end
+
+Mod.run()
+```
+
+## An anaphoric if macro
+
+```elixir
+defmodule Mod do
+  require Logger
+
+  defmacrop aif(condition, body) do
+    {bind, test} = mung(condition)
+
+    quote do
+      var!(it) = unquote(bind)
+
+      if unquote(test) do
+        unquote(body)
+      end
+    end
+  end
+
+  defp mung(node = {:!=, _, _}), do: mung_op(node)
+  defp mung(node = {:==, _, _}), do: mung_op(node)
+
+  defp mung(node),
+    do:
+      {node,
+       quote do
+         var!(it)
+       end}
+
+  defp mung_op({op, metadata, [lhs, rhs]}) do
+    {lhs,
+     {op, metadata,
+      [
+        quote do
+          var!(it)
+        end,
+        rhs
+      ]}}
+  end
+
+  def run do
+    aif mock_api_call_result() != "Good" do
+      IO.puts(it)
+    end
+  end
+
+  defp mock_api_call_result() do
+    "Some error message"
+  end
+end
+
+Mod.run()
+```
+
+## Debugging macros
+
+The key functions are `Macro.expand`, `Macro.expand_once` and `Macro.to_string`.
+
+<!-- livebook:{"break_markdown":true} -->
+
+https://elixirschool.com/en/lessons/advanced/metaprogramming/#debugging-3
+
+## Limitations of Elixir macros
+
+Elixir macros have to receive syntactically valid Elixir expressions as their arguments. This limits the extent to which macros can be used to add truly new syntax.
+
+(This limitation is probably a good thing, on balance.)
+
+## Scratch
+
+```elixir
+quote do
+  "foo" > "bar" > "amp" > "goo"
+end
+```
