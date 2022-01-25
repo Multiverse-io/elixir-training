@@ -616,9 +616,9 @@ PatternMatching.get_favourite_pet(%{name: "Joanna"}, [%{name: "Fluffy"}, %{name:
 |> IO.inspect(label: "Fluffy and Cuddles:")
 ```
 
-| EXERCISE!                                                                                                           |
-| ------------------------------------------------------------------------------------------------------------------- |
-| Can you write a use multiple function headers to create a function struct_to_map that converts any struct to a map? |
+| EXERCISE!                                                                                       |
+| ----------------------------------------------------------------------------------------------- |
+| Can you create a function struct_to_map that converts any struct to a map, even if it's nested? |
 
 Tips:
 
