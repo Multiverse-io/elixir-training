@@ -616,6 +616,60 @@ PatternMatching.get_favourite_pet(%{name: "Joanna"}, [%{name: "Fluffy"}, %{name:
 |> IO.inspect(label: "Fluffy and Cuddles:")
 ```
 
+| EXERCISE!                                                                                                           |
+| ------------------------------------------------------------------------------------------------------------------- |
+| Can you write a use multiple function headers to create a function struct_to_map that converts any struct to a map? |
+
+Tips:
+
+* `Map.from_struct()` may come in handy
+* `Map.new()` may come in handy - it can create a map from a list of tuples
+* `%_{}` enables you to pattern match on any struct
+* Multiple function headers are your friend
+
+```elixir
+defmodule MapHelpers do
+  def struct_to_map() do
+  end
+end
+
+defmodule Name do
+  defstruct first_name: "", last_name: ""
+end
+
+defmodule Pet do
+  defstruct name: Name
+end
+
+defmodule Human do
+  defstruct age: 0, name: Name, pets: []
+end
+```
+
+```elixir
+# Example usage
+my_map =
+  MapHelpers.struct_to_map(%Human{
+    age: 35,
+    name: %Name{first_name: "Tim", last_name: "G"},
+    pets: [
+      %Pet{name: %Name{first_name: "Fluffy", last_name: "Fluffball"}},
+      %Pet{name: %Name{first_name: "Daisy", last_name: "Maisy"}}
+    ]
+  })
+
+IO.inspect(my_map)
+
+my_map == %{
+  age: 35,
+  name: %{first_name: "Tim", last_name: "G"},
+  pets: [
+    %{name: %{first_name: "Fluffy", last_name: "Fluffball"}},
+    %{name: %{first_name: "Daisy", last_name: "Maisy"}}
+  ]
+}
+```
+
 ## Mix - the Elixir build tool
 
 * [Mix](https://elixir-lang.org/getting-started/mix-otp/introduction-to-mix.html#our-first-project) is the build tool for Elixir, similar to npm, yarn, maven, sbt, pip, 
