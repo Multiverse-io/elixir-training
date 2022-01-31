@@ -1065,7 +1065,7 @@ result = with
 
 ## Alias, require, import, and use
 
-### Aliasing Modules and using Import
+### Alias and Import let you use functions from other modules more succinctly
 
 * Aliasing lets you use a shorter reference for the module name
 * Import means you can use the function names directly
@@ -1095,7 +1095,7 @@ do_stuff()
 
 <!-- livebook:{"break_markdown":true} -->
 
-### Require
+### Require lets you call macros from other modules
 
 If you want to use macros from a module then you must `require` that module.
 
@@ -1115,9 +1115,11 @@ require Mac
 Mac.my_unless 1 == 2 do
   IO.puts("Woohoo!!")
 end
+
+if !(1 == 2), do: IO.puts("Woohoo!!")
 ```
 
-### Use
+### Use runs the `__using__` macro from the other module
 
 When you 'use' another module it lets that module inject arbitrary code into your module.
 Usually you will rely on the documentation to let you know what it is doing. The Phoenix 
