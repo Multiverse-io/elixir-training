@@ -20,30 +20,28 @@ https://hexdocs.pm/elixir/Atom.html
 
 ```elixir
 "We like strings! They are utf-8 encoded!"
-
 'We only use charlists when working with Erlang libraries! They are just lists of integers!'
-
 name = "Tim"
 "We can do string interpolation #{name}"
 
 # Atoms are like symbols in other languages
 :atoms_are_not_garbage_collected
-
 # Use atoms for distinct values
 :ok
 :error
 :"stage complete"
 
 "we love " <> "concatenating things"
-
 'we love ' ++ 'concatenating things'
 ```
 
 ```elixir
 # Some examples to understand why we might prefer strings to charlists
 
+# --> 5 (counts graphmemes)
 String.length("héllo")
 
+# --> 6 (counts code points - é is represented by 2 code points)
 length('héllo')
 ```
 
@@ -56,35 +54,44 @@ length('héllo')
 ### Booleans
 
 ```elixir
+# and, or --> both require boolean values as inputs
+# --> false
 true and false
-
+# --> true
 true or false
+# --> error!!
+# 1 or true
 
-1 or true
-
+# &&, || --> can handle truthy/falsy values. 
+# nil and false are the only falsy values
+# --> 1
 1 || true
-
+# --> true
 true || 1
-
+# --> nil
 1 && nil
 
+# Some of the stranger cases...
+# --> 1
 false or 1
-
-1 or false
+# --> error!!
+# 1 or false
 ```
 
 ### Comparisons
 
 ```elixir
+# --> true
 "a" == "a"
-
+# --> true 
 1 == 1.0
-
+# --> false 
 1 === 1.0
-
+# --> true 
 5.0 <= 10
-
+# --> true. All types can be compared. There is an overall ordering of types:
 1 < :atom
+# number < atom < reference < function < port < pid < tuple < map < list < bitstring
 ```
 
 ### Lists and Tuples
@@ -106,10 +113,11 @@ false or 1
   * The built-in Tuple module has some helpful util methods - https://hexdocs.pm/elixir/Tuple.html
 
 ```elixir
+# A list
 [1, 2, 3]
-
+# --> [1, 2, 3] - Syntax for prepending to list
 [1 | [2, 3]]
-
+# --> [1, 2, 3, 4]
 [1, 2] ++ [3, 4]
 ```
 
@@ -138,6 +146,25 @@ defmodule Pipe do
 end
 
 x = 5
+
+# If I want to add 1, then times 3 without a pipe I need to do something like this:
+Pipe.times_3(Pipe.add_1(x))
+# Not too bad, but if you have a lot of chained function calls it can get quite cumbersome
+
+# Instead we can use the pipe operator
+x
+|> Pipe.add_1()
+|> Pipe.times_3()
+
+# If we pipe to a function which takes multiple arguments the piped value is used at the first 
+#  argument
+x
+|> Pipe.add_1()
+|> Pipe.times_3()
+|> Pipe.minus_n(4)
+
+# Is the same as...
+Pipe.minus_n(x, 4)
 ```
 
 #### Some examples with the Enum and Stream module
@@ -145,6 +172,7 @@ x = 5
 * Both modules provide similar methods, but the Stream module has operations which are lazy
 
 ```elixir
+# This code doesn't output a list! Just a description of transformations we want to do
 [1, 2, 3]
 |> Stream.map(fn x -> x + 1 end)
 |> Stream.map(fn x -> x + 3 end)
@@ -375,8 +403,6 @@ Pattern matching can be helpful for:
 * conditional logic
 
 ```elixir
-tuple = {10, 20}
-
 {a, b} = {10, 20}
 IO.inspect(a, label: "a")
 IO.inspect(b, label: "b")
@@ -395,19 +421,25 @@ IO.inspect(z, label: "z")
 ```
 
 ```elixir
+# When things don't match...
 [a, b] = [1, 2, 3]
 
+# You can use an underscore `_` or prefix a variable with an underscore e.g. `_tail` to help
+# in situations where you only want to match parts
 [a, b, _] = [1, 2, 3]
 ```
 
 ```elixir
+# Motivation for the pin operator
 x = 10
 [x, y, z] = [11, 12, 13]
 IO.inspect(x, label: "x")
 ```
 
 ```elixir
+# Usage of the pin operator
 x = 10
+# --> Match Error!
 [^x, y, z] = [11, 12, 13]
 ```
 
@@ -445,6 +477,7 @@ x
 * [x]  pattern matching with multiple function headers
 
 ```elixir
+# Named functions
 defmodule Fn do
   def add(a, b) do
     a + b
@@ -461,26 +494,35 @@ IO.inspect(Fn.add_defaulted())
 ```
 
 ```elixir
+# Anonymous functions
 add = fn a, b -> a + b end
+
+# Call them with a .
 add.(1, 5)
 
+# You can pass anonymous functions as arguments to other functions
+# e.g.1
 Enum.map([1, 2, 3], fn x -> x * 2 end) |> IO.inspect(label: "Doubled")
-
+# e.g.2
 triple = fn x -> x * 3 end
 Enum.map([1, 2, 3], triple) |> IO.inspect(label: "Tripled")
 ```
 
 ```elixir
+# How do we pass named functions as arguments?
 defmodule Fn do
   def square(a), do: a * a
 end
 
+# You could use an anonymous function that calls your named function
 Enum.map([1, 2, 3], fn x -> Fn.square(x) end)
 
+# Neater to use function capture syntax
 Enum.map([1, 2, 3], &Fn.square/1)
 ```
 
 ```elixir
+# Function capture syntax can also be used as a shorthand for defining anonymous functions
 Enum.map([1, 2, 3], &(&1 * &1 * &1))
 ```
 
