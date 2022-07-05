@@ -779,12 +779,57 @@ end
 
 <!-- livebook:{"break_markdown":true} -->
 
-### Other useful and helpers
+### Other useful helpers
 
-* assert_raise
-* capture_io and capture_log
+* assert_raise (built-in)
+* capture_io and capture_log (built-in)
+* assert_unordered_list_equality (custom)
 
-<!-- livebook:{"break_markdown":true} -->
+```elixir
+defmodule Example2 do
+  def greets_in_french do
+    IO.inspect("greeting in french")
+    :bonjour
+  end
+
+  def reverse_list(list), do: Enum.reverse(list)
+end
+```
+
+```elixir
+defmodule Example2Test do
+  use ExUnit.Case
+
+  describe "greets_in_french/0" do
+    test "it greets the user in French" do
+      assert Example2.greets_in_french() == :bonjour
+    end
+
+    test "it does not greet the user in German" do
+      refute Example2.greets_in_french() == :hallo
+    end
+
+    test "it raises if the function is called with the wrong number of arguments" do
+      assert_raise FunctionClauseError, fn ->
+        Example2.greets_in_french("some argument")
+      end
+    end
+
+    test "it inspects as expected" do
+      assert capture_io(fn -> Example2.greets_in_french() end)
+    end
+  end
+
+  describe "reverse_list/1" do
+    test "it returns a list containing the same elements as the input" do
+      list = [1, 2, 3]
+      result = Example.reverse(list)
+      refute list == result
+      assert_unordered_list_equality(list, result)
+    end
+  end
+end
+```
 
 ### Doctests
 
@@ -842,6 +887,56 @@ setup do
 end
 
 ```
+
+```elixir
+defmodule Example3Test do
+  use ExUnit.Case
+
+  setup do
+    :ok
+  end
+
+  describe "some_function_here/2" do
+    setup do
+      :ok
+    end
+
+    test "it behaves in a certain way" do
+      ## assertions go here
+    end
+
+    test "it behaves in some other way" do
+      ## assertions go here
+    end
+  end
+
+  describe "some_other_function/3" do
+    setup do
+      :ok
+    end
+
+    test "it returns what we expect" do
+      ## assertions go here
+    end
+
+    test "it raises when we expect it" do
+      ## assertions go here
+    end
+  end
+
+  test "some helper function does something" do
+    ## assertions go here
+  end
+end
+```
+
+### Using builders
+
+Builders are a really big part of how we do Elixir testing at Multiverse.
+
+A complex but highly used example of a builder is the Apprenticehip Builder, helping use build apprenticeship records quickly so we can test our code against various setups and situations. See: https://github.com/Multiverse-io/platform/blob/master/test/factories/apprenticeship_builder.ex
+
+An example of how builders can be used can be found here: https://github.com/Multiverse-io/platform/blob/master/test/platform/flying_start_attendance/flying_start_attendance_filter_test.exs#L223
 
 <!-- livebook:{"break_markdown":true} -->
 
