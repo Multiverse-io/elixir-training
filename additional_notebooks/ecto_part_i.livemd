@@ -1,0 +1,237 @@
+# Ecto Training Part I
+
+```elixir
+Mix.install([
+  {:ecto, "~> 3.8"},
+  {:ecto_sql, "~> 3.8"},
+  {:postgrex, "~> 0.16.4"}
+])
+```
+
+## Intro
+
+Ecto is an Elixir library for accessing and working with databases. It is very comprehensive, but not the easiest nut to crack so don't worry if at first things don't fully make sense or you find yourself frequently checking the docs.
+
+What this training will cover
+
+* Some key Ecto modules and terminology
+* Converting SQL queries to their Ecto equivelent
+* Slightly more advanced queries
+* Commly used `Repo` functions
+* Introduction to schemas
+* Associations
+* Preloading
+* Joins
+
+Future training will look at
+
+* Transactions and Multi
+* Changesets
+* Changeset validation
+* Migrations
+* Testing
+* Factories
+* Seed data
+
+## Glossary
+
+### Ecto.Query
+
+The `Ecto.Query` module is used to build database queries. It is commonly imported into a module. Many of the useful functions exist in the [`Ecto.Query.API`](https://hexdocs.pm/ecto/Ecto.Query.API.html)
+
+### Ecto.Repo
+
+The `Ecto.Repo` module is responsible for taking queries (or changesets) and executing them.
+
+### Ecto.Schema
+
+This macro is used to define a struct with fields that maps to a database table. You can specifiy the types of each field, along with relatinoships to other schemas.
+
+### Migration
+
+A set of files containing instructions to create or change the database. To create or make a change to an existing database table a new migration file should be created with `mix ecto.gen.migration <migration_name>`.
+
+### Seed data
+
+TODO
+
+### Multi
+
+TODO
+
+<!-- livebook:{"break_markdown":true} -->
+
+### Strings and Atoms
+
+https://hexdocs.pm/elixir/String.html
+https://hexdocs.pm/elixir/Atom.html
+
+## Defining our Repo module
+
+We're defining this now becuase it is needed for the next steps in this training. There's not a lot to it, most of the magic comes from the `use Ecto.Repo` macro. As a reminder, the purpose of the `Repo` is to execute SQL queries on our database, this could be fetching data (`SELECT ...`), updating (`UPDATE ...`) or deleting (`DELETE ...`) but we'll come back to this a bit later on.
+
+```elixir
+defmodule Custom.Repo do
+  use Ecto.Repo,
+    otp_app: :platform,
+    adapter: Ecto.Adapters.Postgres
+end
+
+Custom.Repo.start_link(database: "platform_dev")
+```
+
+## Writing our first Ecto query
+
+Lets consider the following SQL query:
+
+```sql
+select id, email, first_name, last_name from users
+```
+
+To translte this to an Ecto query we typically start by importing the `Ecto.Query` module (which imports a host of useful functions)
+
+```elixir
+import Ecto.Query
+# this is where the `from` function comes from
+
+query = from(u in "users", select: [u.id, u.email, u.first_name, u.last_name])
+```
+
+We can transform an `Ecto.Query` back to raw sql (and bindings) by using `Repo.to_sql/2`
+
+```elixir
+{raw_sql, bindings} = Custom.Repo.to_sql(:all, query)
+
+# the first paramter may be one of :all, :update_all or :delete_all,
+# depending on the type of query
+```
+
+To actually execute the query, we pass it to our `Repo`
+
+```elixir
+Custom.Repo.all(query)
+```
+
+**Note:** in our `select:` part of the query, we specified we wanted to return `[u.id, u.email, u.first_name, u.last_name]`. This means for every result we get back from the database, we will will get a list with these elements.
+A cool thing about the select is we can put different data types here, for example we could have returned:
+
+* a `Tuple` with the values by substituting `select: {u.id, u.email, u.first_name, u.last_name}`,
+* or a `Map` with `select: %{id: u.id, email: u.email, first_name: u.first_name, last_name: u.last_name}`
+* a `Keyword` list with `select: [id: u.id, email: u.email, first_name: u.first_name, last_name: u.last_name]`
+* or even just a single value, not wrapped such as `select: u.email`
+
+<!-- livebook:{"break_markdown":true} -->
+
+| QUESTION!                                                                                         |
+| ------------------------------------------------------------------------------------------------- |
+| Which data structure do you think is most useful for a `select:`? Why?                            |
+| What happens if I don't supply a `select:`?                                                       |
+| Is there a way to select all columns from a table, equivalent to `select * from ...`?             |
+| What happens if I try to select a field that doesn't exist?                                       |
+| Any guesses as to where the `u` comes from in our `from()`? Do you think this is a good practice? |
+
+## Slighty more interesting queries
+
+Queries are composable, for example you can compose a base query then add further filters or where clauses
+
+```elixir
+query_for_fred =
+  query
+  |> where(first_name: "fred")
+  |> where(last_name: not "flintstone")
+
+{raw_sql, bindings} = Custom.Repo.to_sql(:all, query_for_fred)
+```
+
+But note how this is somewhat limited, as we cannot easily specify where _not equal_, or where _greater or less than_. It's usually more readable to pass a keyword list as a second param to the `from` function like below. Note how because in Elixir a `Keyword` list may have repeated keys, it's possible and in fact common to have multiple `where:` clauses!
+
+```elixir
+query_for_fred =
+  from(u in "users",
+    select: {u.first_name, u.last_name},
+    where: u.first_name == "fred" and u.last_name != "flintstone",
+    where: u.id >= 10,
+    where: not is_nil(u.email)
+  )
+```
+
+```elixir
+{raw_sql, bindings} = Custom.Repo.to_sql(:all, query_for_fred)
+```
+
+You can also use existing bindings in queries, but these have to be pinned with a `^`. See what error you get when you forget to pin a variable, then fix the error:
+
+```elixir
+first_name = "fred"
+last_name = "flintstone"
+
+from(u in "users",
+  select: {u.first_name, u.last_name},
+  where: u.first_name == ^first_name,
+  where: u.last_name == last_name
+)
+```
+
+| EXERCISE!                                                  |
+| ---------------------------------------------------------- |
+| Try and convert the following SQL queries to Ecto queries: |
+
+```sql
+select id from users where id > 5 and id < 10;
+```
+
+```sql
+select id from users where email like '%@example.com';
+```
+
+```sql
+select first_name, last_name
+from users
+where first_name in ('Bob', 'Stuart', 'Kevin')
+order by first_name asc
+limit 10;
+```
+
+```elixir
+# from(...)
+```
+
+## Commonly used Repo functions
+
+So far we have used the [`Repo.all/2`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:all/2) function but there are other useful functions depending on what we want to do:
+
+* [`Repo.exists?/2`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:exists?/2) - returns a boolean if there is an entry that matches a query
+* [`Repo.one/2`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:one/2) - Fetches a single result from the query. Returns `nil` if no result was found. Raises if more than one entry.
+* [`Repo.one!/2`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:one!/2) - Similar to one/2 but raises `Ecto.NoResultsError` if no record was found. Raises if more than one entry.
+* [`Repo.update_all/3`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:update_all/3) - The first argument can be a query or a schema, second argument is usually a `Keyword` list. It returns a tuple containing the number of updated entries and any returned result as second element.
+  ```elixir
+          Custom.Repo.update_all(query, set: [first_name: "Bob"])
+  ```
+* [`Repo.delete_all/2`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:delete_all/2) - Deletes all entries matching the given query. It returns a tuple containing the number of entries and any returned result as second element.
+
+The following are only really useful when we use `Schemas`, which we will come back to
+
+* [`Repo.get/3`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:get/3)
+* [`Repo.get!/3`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:get!/3)
+* [`Repo.get_by/3`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:get_by/3)
+* [`Repo.get_by!/3`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:get_by!/3)
+
+## Schemas
+
+So far we have been working with querying tables directly as strings (e.g. `u in "users"`), but Schemas are where a lot of the Elixir magic🪄 comes from. They are essentially a useful way to represent a set of fields, add some type information to those fields (which we can use later for validation) and define realtionships to other schemas. If this sounds a bit like what a relational database does, you're right - Schemas are a tool that allow us to map data neatly from an external source, like a database table, to Elixir.
+
+But we're getting ahead of ourselves. Let's see how do we create a `Schema`.
+
+```elixir
+defmodule User do
+  use Ecto.Schema
+
+  schema "users" do
+    field(:first_name, :string)
+    field(:last_name, :string)
+    field(:email, :string)
+  end
+end
+```
+
+## Associations
