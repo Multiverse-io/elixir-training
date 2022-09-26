@@ -88,7 +88,7 @@ Lets consider the following SQL query:
 select id, email, first_name, last_name from users
 ```
 
-To translte this to an Ecto query we typically start by importing the `Ecto.Query` module (which imports a host of useful functions)
+To translate this to an Ecto query we typically start by importing the `Ecto.Query` module (which imports a host of useful functions)
 
 ```elixir
 import Ecto.Query
@@ -102,7 +102,7 @@ We can transform an `Ecto.Query` back to raw sql (and bindings) by using `Repo.t
 ```elixir
 {raw_sql, bindings} = Custom.Repo.to_sql(:all, query)
 
-# the first paramter may be one of :all, :update_all or :delete_all,
+# the first parameter may be one of :all, :update_all or :delete_all,
 # depending on the type of query
 ```
 
