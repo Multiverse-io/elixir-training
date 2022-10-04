@@ -11,13 +11,14 @@ Mix.install([
 ## Intro
 
 Ecto is an Elixir library for accessing and working with databases. It is very comprehensive, but not the easiest nut to crack so don't worry if at first things don't fully make sense or you find yourself frequently checking the docs.
+[Ecto Overview: The Repository Pattern](https://www.youtube.com/watch?v=IFKG4Hgt-zM&list=PLFhQVxlaKQElscjMvMmyMCaZ9mxf4XAw-)
 
 What this training will cover
 
 * Some key Ecto modules and terminology
-* Converting SQL queries to their Ecto equivelent
+* Converting SQL queries to their Ecto equivalent
 * Slightly more advanced queries
-* Commly used `Repo` functions
+* Commonly used `Repo` functions
 * Introduction to schemas
 * Associations
 * Preloading
@@ -53,9 +54,12 @@ A set of files containing instructions to create or change the database. To crea
 
 ### Seed data
 
-TODO
+Initial data in our datastore that is used for early development work or testing purposes.
 
 ### Multi
+
+The `Ecto.Multi` module provides a simple interface to compose database operations into a single transaction.
+
 
 TODO
 
@@ -102,7 +106,7 @@ We can transform an `Ecto.Query` back to raw sql (and bindings) by using `Repo.t
 ```elixir
 {raw_sql, bindings} = Custom.Repo.to_sql(:all, query)
 
-# the first parameter may be one of :all, :update_all or :delete_all,
+# the first paramter may be one of :all, :update_all or :delete_all,
 # depending on the type of query
 ```
 
