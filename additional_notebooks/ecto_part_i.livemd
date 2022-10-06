@@ -11,8 +11,10 @@ Mix.install([
 ## Intro
 
 Ecto is an Elixir library for accessing and working with databases. It is very comprehensive, but not the easiest nut to crack so don't worry if at first things don't fully make sense or you find yourself frequently checking the docs.
-[Ecto Overview: The Repository Pattern](https://www.youtube.com/watch?v=IFKG4Hgt-zM&list=PLFhQVxlaKQElscjMvMmyMCaZ9mxf4XAw-)
 
+Here are some basic intro videos from [Alchemist Camp](https://www.youtube.com/playlist?list=PLFhQVxlaKQElscjMvMmyMCaZ9mxf4XAw-) that might help you get started:
+* [Ecto Overview: The Repository pattern](https://www.youtube.com/watch?v=IFKG4Hgt-zM&list=PLFhQVxlaKQElscjMvMmyMCaZ9mxf4XAw-)
+* [Ecto: Configure a new project ](https://www.youtube.com/watch?v=K6zuu_dFg-g&list=PLFhQVxlaKQElscjMvMmyMCaZ9mxf4XAw-&index=2)
 What this training will cover
 
 * Some key Ecto modules and terminology
@@ -58,10 +60,8 @@ Initial data in our datastore that is used for early development work or testing
 
 ### Multi
 
-The `Ecto.Multi` module provides a simple interface to compose database operations into a single transaction.
+The `Ecto.Multi` module provides a simple interface to compose multiple operations into a single transaction.
 
-
-TODO
 
 <!-- livebook:{"break_markdown":true} -->
 
@@ -239,3 +239,40 @@ end
 ```
 
 ## Associations
+
+## Multi
+Useful links:
+* [A brief guide to Ecto.Multi](https://elixirschool.com/blog/ecto-multi/)
+* [Introduction to Ecto.Multi](https://smartlogic.io/blog/introduction-to-ecto-multi/)
+
+Useful videos: 
+* [Ecto.Multi: Composable transactions - Eduardo Gurgel](https://youtu.be/Ez9e20Y7YIo?t=156)
+* [Ecto Multis: uses, structute and commonly used functions - Stephanie Vizzi](https://www.youtube.com/watch?v=p85OFmWl1vU&t=71s)
+
+Plan for this lesson/section:
+1. What are they and why are they useful? A: when doing processes, when you want to ensure if one thing fails all fail (e.g creating a user, then creating a role, then sending an email?)
+2. When are they _not_ useful? (when something can fail, one transaction)
+
+Activity:
+1. Write a multi
+2. Convert code to use multi
+
+e.g.
+defmodule MultiDemo do
+  def original_transaction do
+    Repo.transaction(fn ->
+      with {:ok, _first} <- create_record,
+           {:ok, _second} <- create_record do
+        :ok
+      else
+        {:error, changeset} ->
+          changeset
+          |> Repo.rollback()
+      end
+    end)
+  end
+
+  defp create_record do
+    "record created"
+  end
+end
