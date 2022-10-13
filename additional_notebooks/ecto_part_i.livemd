@@ -13,17 +13,26 @@ Mix.install([
 Ecto is an Elixir library for accessing and working with databases. It is very comprehensive, but not the easiest nut to crack so don't worry if at first things don't fully make sense or you find yourself frequently checking the docs.
 
 Here are some basic intro videos from [Alchemist Camp](https://www.youtube.com/playlist?list=PLFhQVxlaKQElscjMvMmyMCaZ9mxf4XAw-) that might help you get started:
+
 * [Ecto Overview: The Repository pattern](https://www.youtube.com/watch?v=IFKG4Hgt-zM&list=PLFhQVxlaKQElscjMvMmyMCaZ9mxf4XAw-)
+
 * [Ecto: Configure a new project ](https://www.youtube.com/watch?v=K6zuu_dFg-g&list=PLFhQVxlaKQElscjMvMmyMCaZ9mxf4XAw-&index=2)
-What this training will cover
+  What this training will cover
 
 * Some key Ecto modules and terminology
+
 * Converting SQL queries to their Ecto equivalent
+
 * Slightly more advanced queries
+
 * Commonly used `Repo` functions
+
 * Introduction to schemas
+
 * Associations
+
 * Preloading
+
 * Joins
 
 Future training will look at
@@ -62,14 +71,6 @@ Initial data in our datastore that is used for early development work or testing
 
 The `Ecto.Multi` module provides a simple interface to compose multiple operations into a single transaction.
 
-
-<!-- livebook:{"break_markdown":true} -->
-
-### Strings and Atoms
-
-https://hexdocs.pm/elixir/String.html
-https://hexdocs.pm/elixir/Atom.html
-
 ## Defining our Repo module
 
 We're defining this now becuase it is needed for the next steps in this training. There's not a lot to it, most of the magic comes from the `use Ecto.Repo` macro. As a reminder, the purpose of the `Repo` is to execute SQL queries on our database, this could be fetching data (`SELECT ...`), updating (`UPDATE ...`) or deleting (`DELETE ...`) but we'll come back to this a bit later on.
@@ -77,11 +78,17 @@ We're defining this now becuase it is needed for the next steps in this training
 ```elixir
 defmodule Custom.Repo do
   use Ecto.Repo,
-    otp_app: :platform,
+    otp_app: :foo,
     adapter: Ecto.Adapters.Postgres
 end
 
-Custom.Repo.start_link(database: "platform_dev")
+{:ok, pid} = Custom.Repo.start_link(database: "elixir_training")
+
+# If you get an error running this, you probably need to create your database first,
+# try running the following in your terminal:
+
+# psql postgres -c "create database elixir_training"
+# psql elixir_training < database.sql
 ```
 
 ## Writing our first Ecto query
@@ -209,7 +216,7 @@ So far we have used the [`Repo.all/2`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:
 * [`Repo.one!/2`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:one!/2) - Similar to one/2 but raises `Ecto.NoResultsError` if no record was found. Raises if more than one entry.
 * [`Repo.update_all/3`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:update_all/3) - The first argument can be a query or a schema, second argument is usually a `Keyword` list. It returns a tuple containing the number of updated entries and any returned result as second element.
   ```elixir
-          Custom.Repo.update_all(query, set: [first_name: "Bob"])
+                                      Custom.Repo.update_all(query, set: [first_name: "Bob"])
   ```
 * [`Repo.delete_all/2`](https://hexdocs.pm/ecto/Ecto.Repo.html#c:delete_all/2) - Deletes all entries matching the given query. It returns a tuple containing the number of entries and any returned result as second element.
 
@@ -241,29 +248,37 @@ end
 ## Associations
 
 ## Multi
+
 Useful links:
+
 * [A brief guide to Ecto.Multi](https://elixirschool.com/blog/ecto-multi/)
 * [Introduction to Ecto.Multi](https://smartlogic.io/blog/introduction-to-ecto-multi/)
 
-Useful videos: 
+Useful videos:
+
 * [Ecto.Multi: Composable transactions - Eduardo Gurgel](https://youtu.be/Ez9e20Y7YIo?t=156)
 * [Ecto Multis: uses, structute and commonly used functions - Stephanie Vizzi](https://www.youtube.com/watch?v=p85OFmWl1vU&t=71s)
 
 Plan for this lesson/section:
+
 1. What are they and why are they useful? A: when doing processes, when you want to ensure if one thing fails all fail (e.g creating a user, then creating a role, then sending an email?)
 2. When are they _not_ useful? (when something can fail, one transaction)
 
 Activity:
+
 1. Write a multi
 2. Convert code to use multi
 
 e.g.
+
+<!-- livebook:{"force_markdown":true} -->
+
 ```elixir
 defmodule MultiDemo do
   def original_transaction do
     Repo.transaction(fn ->
       with {:ok, _first} <- create_record,
-           {:ok, _second} <- create_record do
+          {:ok, _second} <- create_record do
         :ok
       else
         {:error, changeset} ->
@@ -276,5 +291,40 @@ defmodule MultiDemo do
   defp create_record do
     "record created"
   end
+
 end
+```
+
+```elixir
+defmodule MultiDemo do
+  def original_transaction do
+    Custom.Repo.transaction(fn ->
+      with {:ok, _first} <- create_record(),
+           {:ok, _second} <- create_record() do
+        :ok
+      else
+        {:error, changeset} ->
+          changeset
+          |> Repo.rollback()
+      end
+    end)
+  end
+
+  defp create_record do
+    {1, nil} =
+      Custom.Repo.insert_all("users", [
+        [
+          first_name: "Steve",
+          last_name: "Jobs"
+          # email: "steve@example.com"
+        ]
+      ])
+
+    {:ok, 1}
+  end
+end
+```
+
+```elixir
+MultiDemo.original_transaction()
 ```
