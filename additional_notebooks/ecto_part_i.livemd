@@ -258,6 +258,7 @@ Activity:
 2. Convert code to use multi
 
 e.g.
+```elixir
 defmodule MultiDemo do
   def original_transaction do
     Repo.transaction(fn ->
@@ -276,3 +277,4 @@ defmodule MultiDemo do
     "record created"
   end
 end
+```
