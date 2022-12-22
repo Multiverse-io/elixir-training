@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z  "$(which docker1)" ]; then
+if [ -z  "$(which docker)" ]; then
     echo "You need Docker installed to run this script."
     echo "Installation instructions can be found at: https://docs.docker.com/get-docker/"
     echo
