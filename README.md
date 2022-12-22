@@ -8,6 +8,8 @@ examples of the main language features.
 You will need to install [Livebook](https://github.com/livebook-dev/livebook) then open the notebook that you're interested in 
 (see below).
 
+Alternatively, if you have [docker](https://docs.docker.com/get-docker/) installed, then you can just run `./docker-run.sh` instead and that will start the Livebook for you.
+
 ## Introductory material
 
 Topics covered in the [introductory livebook](/notebook.livemd) include:
